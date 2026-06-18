@@ -10,13 +10,13 @@ from pathlib import Path
 from efficientnetv2b0_kfold_runner import PipelineConfig, apply_smoke_test_defaults, run_pipeline
 
 VARIANT_SPECS = [
-    {"variant_name": "Variante_A", "methodology_label": "Variante A", "results_label": "Variante D", "dense_units": [512, 256], "dropout_rate": 0.2},
-    {"variant_name": "Variante_B", "methodology_label": "Variante B", "results_label": "Variante C", "dense_units": [256, 128], "dropout_rate": 0.2},
-    {"variant_name": "Variante_C", "methodology_label": "Variante C", "results_label": "Variante E", "dense_units": [512, 256, 128], "dropout_rate": 0.2},
-    {"variant_name": "Variante_D", "methodology_label": "Variante D", "results_label": "Variante F", "dense_units": [128], "dropout_rate": 0.2},
-    {"variant_name": "Variante_E", "methodology_label": "Variante E", "results_label": "", "dense_units": [96], "dropout_rate": 0.2},
-    {"variant_name": "Variante_G", "methodology_label": "Variante F", "results_label": "Variante G", "dense_units": [64], "dropout_rate": 0.0},
-    {"variant_name": "Variante_H", "methodology_label": "Variante F", "results_label": "Variante H", "dense_units": [64], "dropout_rate": 0.2},
+    {"variant_name": "Variant_A", "methodology_label": "Variant A", "results_label": "Variant D", "dense_units": [512, 256], "dropout_rate": 0.2},
+    {"variant_name": "Variant_B", "methodology_label": "Variant B", "results_label": "Variant C", "dense_units": [256, 128], "dropout_rate": 0.2},
+    {"variant_name": "Variant_C", "methodology_label": "Variant C", "results_label": "Variant E", "dense_units": [512, 256, 128], "dropout_rate": 0.2},
+    {"variant_name": "Variant_D", "methodology_label": "Variant D", "results_label": "Variant F", "dense_units": [128], "dropout_rate": 0.2},
+    {"variant_name": "Variant_E", "methodology_label": "Variant E", "results_label": "", "dense_units": [96], "dropout_rate": 0.2},
+    {"variant_name": "Variant_G", "methodology_label": "Variant F", "results_label": "Variant G", "dense_units": [64], "dropout_rate": 0.0},
+    {"variant_name": "Variant_H", "methodology_label": "Variant F", "results_label": "Variant H", "dense_units": [64], "dropout_rate": 0.2},
 ]
 
 VARIANT_SPECS_BY_NAME = {spec["variant_name"]: spec for spec in VARIANT_SPECS}
@@ -62,7 +62,7 @@ def resolve_variant_specs(variant_names: list[str] | None) -> list[dict[str, obj
     if missing:
         available = ", ".join(sorted(VARIANT_SPECS_BY_NAME))
         requested = ", ".join(missing)
-        raise ValueError(f"Variantes desconhecidas: {requested}. Disponiveis: {available}")
+        raise ValueError(f"Variants desconhecidas: {requested}. Disponiveis: {available}")
 
     return resolved_specs
 
@@ -194,7 +194,7 @@ def run_variants_inprocess(
     for variant in variant_specs:
         variant_name = str(variant["variant_name"])
         if is_variant_fully_cached(output_dir, variant_name):
-            print(f"\n===== Variante {variant_name} ja concluida (cache). Reutilizando artifacts_summary.json. =====", flush=True)
+            print(f"\n===== Variant {variant_name} ja concluida (cache). Reutilizando artifacts_summary.json. =====", flush=True)
             artifacts = load_variant_artifacts(output_dir, variant_name)
             all_artifacts.append(summarize_artifacts(variant, output_dir, artifacts))
             if artifacts.get("interrupted"):
@@ -311,7 +311,7 @@ def run_variants_isolated(
     for variant in variant_specs:
         variant_name = str(variant["variant_name"])
         if is_variant_fully_cached(output_dir, variant_name):
-            print(f"\n===== Variante {variant_name} ja concluida (cache). Reutilizando artifacts_summary.json. =====", flush=True)
+            print(f"\n===== Variant {variant_name} ja concluida (cache). Reutilizando artifacts_summary.json. =====", flush=True)
             artifacts = load_variant_artifacts(output_dir, variant_name)
             all_artifacts.append(summarize_artifacts(variant, output_dir, artifacts))
             if artifacts.get("interrupted"):

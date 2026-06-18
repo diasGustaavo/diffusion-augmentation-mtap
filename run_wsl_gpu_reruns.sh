@@ -21,8 +21,8 @@ fi
 
 export PYTHONUNBUFFERED=1
 export TF_XLA_FLAGS="--tf_xla_auto_jit=0 --tf_xla_enable_xla_devices=false"
-export TMPDIR="/tmp/treinamento_gpu_tmp"
-export XDG_CACHE_HOME="${HOME}/.cache/treinamento_gpu"
+export TMPDIR="/tmp/training_gpu_tmp"
+export XDG_CACHE_HOME="${HOME}/.cache/training_gpu"
 export CUDA_CACHE_PATH="${XDG_CACHE_HOME}/nv"
 mkdir -p "${TMPDIR}" "${XDG_CACHE_HOME}" "${CUDA_CACHE_PATH}"
 

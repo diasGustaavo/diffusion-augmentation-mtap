@@ -1,0 +1,14 @@
+[
+  {
+    "name": "architecture_with_generative",
+    "dataset_root": "datasets/architecture_with_generative",
+    "output_dir_name": "architecture_with_generative_efficientnetv2b0",
+    "augmentation_mode": "none"
+  },
+  {
+    "name": "architecture_with_generative_traditional",
+    "dataset_root": "datasets/architecture_with_generative",
+    "output_dir_name": "architecture_with_generative_efficientnetv2b0_traditional",
+    "augmentation_mode": "traditional"
+  }
+]

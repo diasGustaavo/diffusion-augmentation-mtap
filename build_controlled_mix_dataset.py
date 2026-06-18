@@ -54,11 +54,11 @@ def build_controlled_mix_dataset(args: argparse.Namespace) -> dict[str, object]:
 
     output_root.mkdir(parents=True, exist_ok=True)
 
-    for split_name in ("validacao", "teste"):
+    for split_name in ("val", "test"):
         copy_split(original_root / split_name, output_root / split_name)
 
-    train_original_root = original_root / "treinamento"
-    train_augmented_root = augmented_root / "treinamento"
+    train_original_root = original_root / "train"
+    train_augmented_root = augmented_root / "train"
     class_dirs = sorted([item for item in train_original_root.iterdir() if item.is_dir()], key=lambda item: item.name)
 
     manifest: dict[str, object] = {
@@ -89,7 +89,7 @@ def build_controlled_mix_dataset(args: argparse.Namespace) -> dict[str, object]:
             key=lambda item: item.name,
         )
 
-        dst_class_root = output_root / "treinamento" / class_dir.name
+        dst_class_root = output_root / "train" / class_dir.name
         dst_class_root.mkdir(parents=True, exist_ok=True)
 
         for src_path in [*original_files, *selected_synthetic]:

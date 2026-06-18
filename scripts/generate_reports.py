@@ -1,9 +1,9 @@
 """Generate consolidated reports from all_experiments_summary_*.json files.
 
 Outputs into reports/ with a date stamp:
-- tabela_completa_variantes_todos_reruns_<date>.{csv,xlsx,md}
-- resumo_resultados_finais_<date>.csv
-- relatorio_resultados_finais_<date>.{md,html,pdf}
+- full_variants_table_all_reruns_<date>.{csv,xlsx,md}
+- final_results_summary_<date>.csv
+- final_results_report_<date>.{md,html,pdf}
 """
 from __future__ import annotations
 
@@ -78,14 +78,14 @@ def build_summary(df: pd.DataFrame) -> pd.DataFrame:
         if g["TestAccuracy"].notna().any():
             best_t = g.loc[g["TestAccuracy"].idxmax()]
             best_t_variants = g.loc[g["TestAccuracy"] == best_t["TestAccuracy"], "Variant"].tolist()
-            best_t_variant = "/".join(v.replace("Variante_", "") for v in best_t_variants)
+            best_t_variant = "/".join(v.replace("Variant_", "") for v in best_t_variants)
             best_t_val = best_t["TestAccuracy"]
         else:
             best_t_variant, best_t_val = "-", None
         if g["ValidationAccuracy"].notna().any():
             best_v = g.loc[g["ValidationAccuracy"].idxmax()]
             best_v_variants = g.loc[g["ValidationAccuracy"] == best_v["ValidationAccuracy"], "Variant"].tolist()
-            best_v_variant = "/".join(v.replace("Variante_", "") for v in best_v_variants)
+            best_v_variant = "/".join(v.replace("Variant_", "") for v in best_v_variants)
             best_v_val = best_v["ValidationAccuracy"]
         else:
             best_v_variant, best_v_val = "-", None
@@ -143,13 +143,13 @@ def export_csv_xlsx(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: p
     df_full_slim = df_full.drop(columns=list(DROP_COLS))
     df_with_means = interleave_experiment_means(df_full_slim)
 
-    csv_path = REPORTS / f"tabela_completa_variantes_todos_reruns_{stamp}.csv"
+    csv_path = REPORTS / f"full_variants_table_all_reruns_{stamp}.csv"
     df_csv = df_with_means.copy()
     for col in ("ValidationAccuracy", "TestAccuracy"):
         df_csv[col] = df_csv[col].apply(lambda v: "" if pd.isna(v) else f"{v}")
     df_csv.to_csv(csv_path, index=False, encoding="utf-8-sig")
 
-    xlsx_path = REPORTS / f"tabela_completa_variantes_todos_reruns_{stamp}.xlsx"
+    xlsx_path = REPORTS / f"full_variants_table_all_reruns_{stamp}.xlsx"
     with pd.ExcelWriter(xlsx_path, engine="openpyxl") as writer:
         df_with_means.to_excel(writer, sheet_name="Complete", index=False)
         workbook = writer.book
@@ -171,7 +171,7 @@ def export_csv_xlsx(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: p
                     cell.font = mean_font
                     cell.fill = mean_fill
 
-    resumo_csv = REPORTS / f"resumo_resultados_finais_{stamp}.csv"
+    resumo_csv = REPORTS / f"final_results_summary_{stamp}.csv"
     df_summary.to_csv(resumo_csv, index=False, encoding="utf-8-sig")
     return csv_path, xlsx_path, resumo_csv
 
@@ -215,8 +215,8 @@ def build_markdown(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: pd
     lines.append("| Run | Experiment | Best test | Best validation | Mean test |")
     lines.append("| --- | --- | --- | --- | ---: |")
     for _, r in df_summary.iterrows():
-        bt = f"`Variante_{r['BestTestVariant']}` = `{fmt_acc(r['BestTestAccuracy'])}`" if r["BestTestVariant"] != "-" else "-"
-        bv = f"`Variante_{r['BestValidationVariant']}` = `{fmt_acc(r['BestValidationAccuracy'])}`" if r["BestValidationVariant"] != "-" else "-"
+        bt = f"`Variant_{r['BestTestVariant']}` = `{fmt_acc(r['BestTestAccuracy'])}`" if r["BestTestVariant"] != "-" else "-"
+        bv = f"`Variant_{r['BestValidationVariant']}` = `{fmt_acc(r['BestValidationAccuracy'])}`" if r["BestValidationVariant"] != "-" else "-"
         mt = fmt_acc(r["MeanTestAccuracy"])
         lines.append(f"| {r['Run']} | `{r['Experiment']}` | {bt} | {bv} | `{mt}` |")
     lines.append("")
@@ -357,7 +357,7 @@ def _table_to_html(lines: list[str]) -> str:
 
 
 def export_pdf(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: pd.DataFrame, stamp: str) -> Path:
-    pdf_path = REPORTS / f"relatorio_resultados_finais_{stamp}.pdf"
+    pdf_path = REPORTS / f"final_results_report_{stamp}.pdf"
     doc = SimpleDocTemplate(
         str(pdf_path),
         pagesize=landscape(A4),
@@ -455,14 +455,14 @@ def main() -> None:
     csv_path, xlsx_path, resumo_csv = export_csv_xlsx(df_full, df_summary, df_top10, stamp)
 
     md_text = build_markdown(df_full, df_summary, df_top10, stamp)
-    md_path = REPORTS / f"relatorio_resultados_finais_{stamp}.md"
+    md_path = REPORTS / f"final_results_report_{stamp}.md"
     md_path.write_text(md_text, encoding="utf-8")
 
     html_text = build_html(md_text, stamp)
-    html_path = REPORTS / f"relatorio_resultados_finais_{stamp}.html"
+    html_path = REPORTS / f"final_results_report_{stamp}.html"
     html_path.write_text(html_text, encoding="utf-8")
 
-    md_table_path = REPORTS / f"tabela_completa_variantes_todos_reruns_{stamp}.md"
+    md_table_path = REPORTS / f"full_variants_table_all_reruns_{stamp}.md"
     md_table_lines = [
         "# Full table of variants per run",
         "",

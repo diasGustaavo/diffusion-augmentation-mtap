@@ -5,7 +5,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 from PIL import Image
 
-WORKSPACE = Path("/mnt/c/Users/ghmd1/Desktop/treinamento")
+WORKSPACE = Path(__file__).resolve().parent.parent
 REPORTS = WORKSPACE / "reports"
 
 CLASSES = [
@@ -22,7 +22,7 @@ def grab(pattern_dir: Path, pattern_prefix: str, suffix: tuple[str, ...], limit:
 
 
 def sample_grid(dataset_name: str):
-    ds_root = WORKSPACE / "datasets" / dataset_name / "treinamento"
+    ds_root = WORKSPACE / "datasets" / dataset_name / "train"
     fig, axes = plt.subplots(len(CLASSES), 6, figsize=(16, 3.3 * len(CLASSES)))
     for row, cls in enumerate(CLASSES):
         cls_dir = ds_root / cls

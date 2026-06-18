@@ -10,7 +10,7 @@ with original + 4 heatmaps per image.
 
 Usage:
   python gradcam_compare_experiments.py [--rerun rerun1_imagenet_frozen]
-                                        [--variant Variante_A]
+                                        [--variant Variant_A]
                                         [--fold 1]
                                         [--images 3]
                                         [--seed 42]
@@ -32,10 +32,10 @@ import tensorflow as tf
 from PIL import Image
 
 
-WORKSPACE = Path("/mnt/c/Users/ghmd1/Desktop/treinamento")
-OUTPUTS = Path("/mnt/a/outputs")
+WORKSPACE = Path(__file__).resolve().parent.parent
+OUTPUTS = Path("outputs")
 REPORTS = WORKSPACE / "reports"
-TEST_ROOT = WORKSPACE / "datasets" / "original" / "teste"
+TEST_ROOT = WORKSPACE / "datasets" / "original" / "test"
 
 EXPERIMENTS = [
     ("original", "original_efficientnetv2b0"),
@@ -149,7 +149,7 @@ def pick_images(records: list[tuple[int, str, Path]], n: int, seed: int) -> list
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rerun", default="rerun1_imagenet_frozen")
-    parser.add_argument("--variant", default="Variante_A")
+    parser.add_argument("--variant", default="Variant_A")
     parser.add_argument("--fold", type=int, default=1)
     parser.add_argument("--images", type=int, default=3)
     parser.add_argument("--seed", type=int, default=42)

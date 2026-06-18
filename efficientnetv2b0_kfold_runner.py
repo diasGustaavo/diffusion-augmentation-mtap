@@ -67,7 +67,7 @@ class PipelineConfig:
     augmentation_zoom: float = 0.1
     augmentation_horizontal_flip: bool = True
     augmentation_fill_mode: str = "nearest"
-    variant_name: str = "variante_padrao"
+    variant_name: str = "default_variant"
     variant_aliases: tuple[str, ...] = ()
     resume_training: bool = True
     dataset_num_parallel_calls: int = -1
@@ -769,12 +769,12 @@ def evaluate_ensemble(
         ),
     }
 
-    if split_name == "teste":
+    if split_name == "test":
         plot_confusion(
             y_true=y_true,
             y_pred=y_pred,
             class_names=class_names,
-            output_path=output_dir / "matriz_confusao_teste.png",
+            output_path=output_dir / "confusion_matrix_test.png",
         )
         print("[postprocess] Test confusion matrix generated.", flush=True)
 
@@ -842,7 +842,7 @@ def build_interrupted_artifacts(
     interrupted_fold: int,
 ) -> dict[str, Any]:
     if histories:
-        plot_training_curves(histories, output_dir / "curvas_treinamento.png")
+        plot_training_curves(histories, output_dir / "training_curves.png")
 
     artifacts = {
         "dataset_root": str(dataset_root),
@@ -856,9 +856,9 @@ def build_interrupted_artifacts(
         "test_metrics": {"available": False},
         "best_model_path": None,
         "saved_files": {
-            "curves": str(output_dir / "curvas_treinamento.png"),
-            "confusion_matrix": str(output_dir / "matriz_confusao_teste.png"),
-            "explainability": str(output_dir / "casos_explicabilidade_gradcam.png"),
+            "curves": str(output_dir / "training_curves.png"),
+            "confusion_matrix": str(output_dir / "confusion_matrix_test.png"),
+            "explainability": str(output_dir / "gradcam_explainability_cases.png"),
             "fold_results": str(output_dir / "fold_results.json"),
         },
         "interrupted": True,
@@ -879,9 +879,9 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
     output_dir = Path(config.output_dir).expanduser().resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    training_root = dataset_root / "treinamento"
-    validation_root = dataset_root / "validacao"
-    test_root = dataset_root / "teste"
+    training_root = dataset_root / "train"
+    validation_root = dataset_root / "val"
+    test_root = dataset_root / "test"
 
     class_directories = sorted([item for item in training_root.iterdir() if item.is_dir()], key=lambda item: item.name)
     class_to_index = {directory.name: idx for idx, directory in enumerate(class_directories)}
@@ -1165,7 +1165,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
     print("[postprocess] Saving fold summary.", flush=True)
     save_json(output_dir / "fold_results.json", fold_summaries)
     print("[postprocess] Generating training curves.", flush=True)
-    plot_training_curves(histories, output_dir / "curvas_treinamento.png")
+    plot_training_curves(histories, output_dir / "training_curves.png")
 
     # Disable XLA/tf.function tracing for ensemble inference to avoid multi-hour
     # CPU JIT compilations that block post-processing silently.
@@ -1176,7 +1176,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
         model_paths=model_paths,
         records=validation_records,
         config=config,
-        split_name="validacao",
+        split_name="val",
         class_names=class_names,
         output_dir=output_dir,
         preloaded_images=validation_images_all,
@@ -1187,7 +1187,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
         model_paths=model_paths,
         records=test_records,
         config=config,
-        split_name="teste",
+        split_name="test",
         class_names=class_names,
         output_dir=output_dir,
         preloaded_images=test_images_all,
@@ -1206,7 +1206,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
             class_names=class_names,
             model_path=best_model_path,
             config=config,
-            output_path=output_dir / "casos_explicabilidade_gradcam.png",
+            output_path=output_dir / "gradcam_explainability_cases.png",
         )
         print("[postprocess] Grad-CAM completed.", flush=True)
 
@@ -1222,9 +1222,9 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
         "test_metrics": test_eval.get("metrics", {"available": False}),
         "best_model_path": str(best_model_path),
         "saved_files": {
-            "curves": str(output_dir / "curvas_treinamento.png"),
-            "confusion_matrix": str(output_dir / "matriz_confusao_teste.png"),
-            "explainability": str(output_dir / "casos_explicabilidade_gradcam.png"),
+            "curves": str(output_dir / "training_curves.png"),
+            "confusion_matrix": str(output_dir / "confusion_matrix_test.png"),
+            "explainability": str(output_dir / "gradcam_explainability_cases.png"),
             "fold_results": str(output_dir / "fold_results.json"),
         },
         "interrupted": False,
@@ -1331,7 +1331,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--augmentation-zoom", type=float, default=0.1)
     parser.add_argument("--augmentation-fill-mode", default="nearest")
     parser.add_argument("--no-augmentation-horizontal-flip", action="store_true")
-    parser.add_argument("--variant-name", default="variante_padrao")
+    parser.add_argument("--variant-name", default="default_variant")
     parser.add_argument("--variant-alias", action="append", default=[])
     parser.add_argument("--no-resume-training", action="store_true")
     parser.add_argument("--dataset-num-parallel-calls", type=int, default=-1, help="-1 usa tf.data.AUTOTUNE.")
