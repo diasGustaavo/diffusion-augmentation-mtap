@@ -110,9 +110,9 @@ def build_top10(df: pd.DataFrame) -> pd.DataFrame:
         by=["TestAccuracy", "ValidationAccuracy"],
         ascending=[False, False],
     ).head(10).reset_index(drop=True)
-    valid.insert(0, "Posicao", range(1, len(valid) + 1))
+    valid.insert(0, "Rank", range(1, len(valid) + 1))
     return valid[[
-        "Posicao", "Run", "Experiment", "Variant",
+        "Rank", "Run", "Experiment", "Variant",
         "ValidationAccuracy", "TestAccuracy",
     ]]
 
@@ -121,9 +121,9 @@ DROP_COLS = ("MethodologyLabel", "ResultsLabel", "Interrupted", "OutputDir")
 
 
 def interleave_experiment_means(df: pd.DataFrame) -> pd.DataFrame:
-    """Para cada (Run, Experimento): listar todas as variantes e apos
-    o ultimo item do grupo, inserir uma linha MEDIA com a media
-    daquele experimento naquele run especifico."""
+    """For each (Run, Experiment): list all variants and, after the last
+    item of the group, insert a MEAN row with the mean of that experiment
+    in that specific run."""
     out: list[dict] = []
     for (run_key, run, exp), g in df.groupby(["RunKey", "Run", "Experiment"], sort=False):
         for _, r in g.iterrows():
@@ -132,7 +132,7 @@ def interleave_experiment_means(df: pd.DataFrame) -> pd.DataFrame:
             "RunKey": run_key,
             "Run": run,
             "Experiment": exp,
-            "Variant": "MEDIA",
+            "Variant": "MEAN",
             "ValidationAccuracy": g["ValidationAccuracy"].mean(),
             "TestAccuracy": g["TestAccuracy"].mean(),
         })
@@ -151,25 +151,25 @@ def export_csv_xlsx(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: p
 
     xlsx_path = REPORTS / f"tabela_completa_variantes_todos_reruns_{stamp}.xlsx"
     with pd.ExcelWriter(xlsx_path, engine="openpyxl") as writer:
-        df_with_means.to_excel(writer, sheet_name="Completo", index=False)
+        df_with_means.to_excel(writer, sheet_name="Complete", index=False)
         workbook = writer.book
-        ws = workbook["Completo"]
-        # ajustar largura das colunas
+        ws = workbook["Complete"]
+        # adjust column widths
         for column_cells in ws.columns:
             letter = column_cells[0].column_letter
             max_len = max((len(str(c.value or "")) for c in column_cells), default=10)
             ws.column_dimensions[letter].width = min(max_len + 2, 60)
-        # negrito + fundo cinza nas linhas MEDIA
+        # bold + grey background on MEAN rows
         from openpyxl.styles import Font, PatternFill
-        media_font = Font(bold=True)
-        media_fill = PatternFill("solid", fgColor="E2E8F0")
+        mean_font = Font(bold=True)
+        mean_fill = PatternFill("solid", fgColor="E2E8F0")
         variant_col = list(df_with_means.columns).index("Variant") + 1
         for row_index in range(2, ws.max_row + 1):
-            if ws.cell(row=row_index, column=variant_col).value == "MEDIA":
+            if ws.cell(row=row_index, column=variant_col).value == "MEAN":
                 for col_index in range(1, ws.max_column + 1):
                     cell = ws.cell(row=row_index, column=col_index)
-                    cell.font = media_font
-                    cell.fill = media_fill
+                    cell.font = mean_font
+                    cell.fill = mean_fill
 
     resumo_csv = REPORTS / f"resumo_resultados_finais_{stamp}.csv"
     df_summary.to_csv(resumo_csv, index=False, encoding="utf-8-sig")
@@ -178,41 +178,41 @@ def export_csv_xlsx(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: p
 
 def build_markdown(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: pd.DataFrame, stamp: str) -> str:
     lines = []
-    lines.append("# Relatorio Final de Resultados")
+    lines.append("# Final Results Report")
     lines.append("")
-    lines.append(f"Data de consolidacao: {stamp}")
+    lines.append(f"Consolidation date: {stamp}")
     lines.append("")
-    lines.append("## Fontes usadas")
+    lines.append("## Sources used")
     lines.append("")
     for run, fn in SUMMARY_FILES:
         if (OUTPUTS / fn).exists():
             lines.append(f"- `outputs/{fn}` ({run})")
     lines.append("")
 
-    lines.append("## Resumo executivo")
+    lines.append("## Executive summary")
     lines.append("")
     lines.append(
-        "- `Rerun 5` (from scratch + AdamW, unfrozen backbone, 300 epocas, patience 50) "
-        "concluiu todos os 4 experimentos com 7 variantes cada. Nao usa pesos da ImageNet."
+        "- `Rerun 5` (from scratch + AdamW, unfrozen backbone, 300 epochs, patience 50) "
+        "completed all 4 experiments with 7 variants each. Does not use ImageNet weights."
     )
     rerun5 = df_full[df_full["Run"] == "Rerun 5"]
     if not rerun5.empty:
         best_row = rerun5.loc[rerun5["TestAccuracy"].idxmax()]
         lines.append(
-            f"- Melhor teste geral do Rerun 5: `{best_row['Experiment']}` / `{best_row['Variant']}` "
-            f"= `{best_row['TestAccuracy']:.4f}` (validacao `{best_row['ValidationAccuracy']:.4f}`)."
+            f"- Best overall test result of Rerun 5: `{best_row['Experiment']}` / `{best_row['Variant']}` "
+            f"= `{best_row['TestAccuracy']:.4f}` (validation `{best_row['ValidationAccuracy']:.4f}`)."
         )
         worst_exp = rerun5.groupby("Experiment")["TestAccuracy"].mean().idxmin()
         worst_mean = rerun5.groupby("Experiment")["TestAccuracy"].mean().min()
         best_exp = rerun5.groupby("Experiment")["TestAccuracy"].mean().idxmax()
         best_mean = rerun5.groupby("Experiment")["TestAccuracy"].mean().max()
-        lines.append(f"- Experimento com melhor media Rerun 5: `{best_exp}` = `{best_mean:.4f}`.")
-        lines.append(f"- Experimento com pior media Rerun 5: `{worst_exp}` = `{worst_mean:.4f}`.")
+        lines.append(f"- Experiment with best mean in Rerun 5: `{best_exp}` = `{best_mean:.4f}`.")
+        lines.append(f"- Experiment with worst mean in Rerun 5: `{worst_exp}` = `{worst_mean:.4f}`.")
     lines.append("")
 
-    lines.append("## Tabela 1. Melhor resultado por experimento e run")
+    lines.append("## Table 1. Best result per experiment and run")
     lines.append("")
-    lines.append("| Run | Experimento | Melhor teste | Melhor validacao | Media teste |")
+    lines.append("| Run | Experiment | Best test | Best validation | Mean test |")
     lines.append("| --- | --- | --- | --- | ---: |")
     for _, r in df_summary.iterrows():
         bt = f"`Variante_{r['BestTestVariant']}` = `{fmt_acc(r['BestTestAccuracy'])}`" if r["BestTestVariant"] != "-" else "-"
@@ -221,25 +221,25 @@ def build_markdown(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: pd
         lines.append(f"| {r['Run']} | `{r['Experiment']}` | {bt} | {bv} | `{mt}` |")
     lines.append("")
 
-    lines.append("## Tabela 2. Top 10 modelos no teste")
+    lines.append("## Table 2. Top 10 models on the test set")
     lines.append("")
-    lines.append("| Posicao | Run | Experimento | Variante | Validacao | Teste |")
+    lines.append("| Rank | Run | Experiment | Variant | Validation | Test |")
     lines.append("| ---: | --- | --- | --- | ---: | ---: |")
     for _, r in df_top10.iterrows():
         lines.append(
-            f"| {r['Posicao']} | {r['Run']} | `{r['Experiment']}` | `{r['Variant']}` | "
+            f"| {r['Rank']} | {r['Run']} | `{r['Experiment']}` | `{r['Variant']}` | "
             f"`{fmt_acc(r['ValidationAccuracy'])}` | `{fmt_acc(r['TestAccuracy'])}` |"
         )
     lines.append("")
 
-    lines.append("## Tabela 3. Rerun 5 completo (from scratch + AdamW)")
+    lines.append("## Table 3. Full Rerun 5 (from scratch + AdamW)")
     lines.append("")
     rerun5 = df_full[df_full["Run"] == "Rerun 5"]
     for exp_name in rerun5["Experiment"].unique():
         sub = rerun5[rerun5["Experiment"] == exp_name]
         lines.append(f"### `{exp_name}`")
         lines.append("")
-        lines.append("| Variante | Validacao | Teste |")
+        lines.append("| Variant | Validation | Test |")
         lines.append("| --- | ---: | ---: |")
         for _, r in sub.iterrows():
             lines.append(
@@ -257,10 +257,10 @@ def build_html(md_text: str, stamp: str) -> str:
     except Exception:
         body = _simple_md_to_html(md_text)
     html = f"""<!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Relatorio Final de Resultados - {stamp}</title>
+<title>Final Results Report - {stamp}</title>
 <style>
 body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 28px; color: #222; max-width: 1100px; }}
 h1 {{ color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 6px; }}
@@ -372,12 +372,12 @@ def export_pdf(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: pd.Dat
     mono = ParagraphStyle("mono", parent=body, fontName="Courier", fontSize=8)
 
     flow = []
-    flow.append(Paragraph("Relatorio Final de Resultados", h1))
-    flow.append(Paragraph(f"Data de consolidacao: {stamp}", body))
+    flow.append(Paragraph("Final Results Report", h1))
+    flow.append(Paragraph(f"Consolidation date: {stamp}", body))
     flow.append(Spacer(1, 6))
 
-    flow.append(Paragraph("Tabela 1. Melhor resultado por experimento e run", h2))
-    data1 = [["Run", "Experimento", "Melhor teste", "Melhor validacao", "Media teste"]]
+    flow.append(Paragraph("Table 1. Best result per experiment and run", h2))
+    data1 = [["Run", "Experiment", "Best test", "Best validation", "Mean test"]]
     for _, r in df_summary.iterrows():
         bt = f"Var_{r['BestTestVariant']} = {fmt_acc(r['BestTestAccuracy'])}" if r["BestTestVariant"] != "-" else "-"
         bv = f"Var_{r['BestValidationVariant']} = {fmt_acc(r['BestValidationAccuracy'])}" if r["BestValidationVariant"] != "-" else "-"
@@ -387,11 +387,11 @@ def export_pdf(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: pd.Dat
     flow.append(t1)
     flow.append(Spacer(1, 10))
 
-    flow.append(Paragraph("Tabela 2. Top 10 modelos no teste", h2))
-    data2 = [["#", "Run", "Experimento", "Variante", "Validacao", "Teste"]]
+    flow.append(Paragraph("Table 2. Top 10 models on the test set", h2))
+    data2 = [["#", "Run", "Experiment", "Variant", "Validation", "Test"]]
     for _, r in df_top10.iterrows():
         data2.append([
-            str(r["Posicao"]), r["Run"], r["Experiment"], r["Variant"],
+            str(r["Rank"]), r["Run"], r["Experiment"], r["Variant"],
             fmt_acc(r["ValidationAccuracy"]), fmt_acc(r["TestAccuracy"]),
         ])
     t2 = Table(data2, repeatRows=1, colWidths=[20, 55, 140, 75, 55, 55])
@@ -399,12 +399,12 @@ def export_pdf(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: pd.Dat
     flow.append(t2)
     flow.append(PageBreak())
 
-    flow.append(Paragraph("Tabela 3. Rerun 5 completo (from scratch + AdamW)", h2))
+    flow.append(Paragraph("Table 3. Full Rerun 5 (from scratch + AdamW)", h2))
     rerun5 = df_full[df_full["Run"] == "Rerun 5"]
     for exp_name in rerun5["Experiment"].unique():
         flow.append(Paragraph(exp_name, h3))
         sub = rerun5[rerun5["Experiment"] == exp_name]
-        data = [["Variante", "Validacao", "Teste"]]
+        data = [["Variant", "Validation", "Test"]]
         for _, r in sub.iterrows():
             data.append([r["Variant"], fmt_acc(r["ValidationAccuracy"]), fmt_acc(r["TestAccuracy"])])
         t = Table(data, repeatRows=1, colWidths=[80, 60, 60])
@@ -413,8 +413,8 @@ def export_pdf(df_full: pd.DataFrame, df_summary: pd.DataFrame, df_top10: pd.Dat
         flow.append(Spacer(1, 6))
 
     flow.append(PageBreak())
-    flow.append(Paragraph("Tabela 4. Todas as variantes x runs (completa)", h2))
-    data_full = [["Run", "Experimento", "Variante", "Validacao", "Teste"]]
+    flow.append(Paragraph("Table 4. All variants x runs (full)", h2))
+    data_full = [["Run", "Experiment", "Variant", "Validation", "Test"]]
     for _, r in df_full.iterrows():
         data_full.append([
             r["Run"], r["Experiment"], r["Variant"],
@@ -447,7 +447,7 @@ def main() -> None:
     stamp = date.today().isoformat()
     rows = load_rows()
     if not rows:
-        raise SystemExit("Nenhum summary encontrado.")
+        raise SystemExit("No summary found.")
     df_full = pd.DataFrame(rows)
     df_summary = build_summary(df_full)
     df_top10 = build_top10(df_full)
@@ -464,24 +464,24 @@ def main() -> None:
 
     md_table_path = REPORTS / f"tabela_completa_variantes_todos_reruns_{stamp}.md"
     md_table_lines = [
-        "# Tabela completa de variantes por run",
+        "# Full table of variants per run",
         "",
-        f"Data: {stamp}",
+        f"Date: {stamp}",
         "",
-        "| Run | Experimento | Variante | Validacao | Teste | Interrupted |",
+        "| Run | Experiment | Variant | Validation | Test | Interrupted |",
         "| --- | --- | --- | ---: | ---: | :---: |",
     ]
     for _, r in df_full.iterrows():
         md_table_lines.append(
             f"| {r['Run']} | `{r['Experiment']}` | `{r['Variant']}` | "
             f"`{fmt_acc(r['ValidationAccuracy'])}` | `{fmt_acc(r['TestAccuracy'])}` | "
-            f"{'sim' if r['Interrupted'] else 'nao'} |"
+            f"{'yes' if r['Interrupted'] else 'no'} |"
         )
     md_table_path.write_text("\n".join(md_table_lines), encoding="utf-8")
 
     pdf_path = export_pdf(df_full, df_summary, df_top10, stamp)
 
-    print("Gerados:")
+    print("Generated:")
     for p in (csv_path, xlsx_path, resumo_csv, md_path, html_path, md_table_path, pdf_path):
         print(f"  {p}")
 

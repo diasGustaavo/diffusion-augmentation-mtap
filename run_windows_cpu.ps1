@@ -38,7 +38,7 @@ Start-Process `
     -WorkingDirectory $workspace `
     -WindowStyle Normal
 
-Write-Host "Supervisor iniciado em CPU."
+Write-Host "Supervisor started on CPU."
 Write-Host "Workspace: $workspace"
 Write-Host "Log supervisor: $supervisorLog"
-Write-Host "Log treino: $childLog"
+Write-Host "Training log: $childLog"

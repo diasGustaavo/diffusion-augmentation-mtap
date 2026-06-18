@@ -8,7 +8,7 @@ python_bin="${venv_path}/bin/python"
 pip_bin="${venv_path}/bin/pip"
 
 if ! command -v python3 >/dev/null 2>&1; then
-  echo "python3 nao encontrado no WSL."
+  echo "python3 not found on WSL."
   exit 1
 fi
 

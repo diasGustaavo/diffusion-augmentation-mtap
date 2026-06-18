@@ -22,6 +22,6 @@ Start-Process `
     -WorkingDirectory $workspace `
     -WindowStyle Hidden
 
-Write-Host "Fila de reruns iniciada no WSL com launcher dedicado."
+Write-Host "Rerun queue started on WSL with a dedicated launcher."
 Write-Host "Workspace WSL: $workspaceWsl"
 Write-Host "Log: $(Join-Path $logsRoot 'wsl_gpu_reruns.out')"

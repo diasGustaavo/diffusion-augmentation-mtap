@@ -93,7 +93,7 @@ def configure_tensorflow_runtime() -> None:
 
     gpus = tf.config.list_physical_devices("GPU")
     if not gpus:
-        print("[runtime] TensorFlow iniciou sem GPU visivel. O treino vai usar CPU.")
+        print("[runtime] TensorFlow started with no visible GPU. Training will run on CPU.")
         return
 
     for gpu in gpus:
@@ -179,7 +179,7 @@ def build_image_data_generator(
     class_names: list[str],
 ):
     if records.empty:
-        raise ValueError("Nenhuma imagem encontrada para construir o gerador.")
+        raise ValueError("No images found to build the generator.")
 
     dataframe = records.copy()
     dataframe["class_text"] = dataframe["display_name"]
@@ -200,7 +200,7 @@ def build_image_data_generator(
 
 def load_images_to_numpy(records: pd.DataFrame, image_size: int) -> tuple[np.ndarray, np.ndarray]:
     if records.empty:
-        raise ValueError("Nenhuma imagem encontrada para carregar em memoria.")
+        raise ValueError("No images found to load into memory.")
 
     # Keep images as uint8 to avoid blowing up RAM for larger folds.
     images = np.empty((len(records), image_size, image_size, 3), dtype=np.uint8)
@@ -265,7 +265,7 @@ def build_tf_dataset_from_arrays(
 
 def build_tf_dataset(records: pd.DataFrame, config: PipelineConfig, training: bool) -> tf.data.Dataset:
     if records.empty:
-        raise ValueError("Nenhuma imagem encontrada para construir o dataset.")
+        raise ValueError("No images found to build the dataset.")
 
     paths = records["path"].astype(str).tolist()
     labels = records["label"].astype(np.int32).to_numpy()
@@ -301,7 +301,7 @@ def build_model(config: PipelineConfig, num_classes: int) -> tf.keras.Model:
             input_shape=(config.image_size, config.image_size, 3),
         )
     except Exception as exc:
-        print(f"[aviso] Falha ao carregar pesos pretreinados ({exc}). Continuando com pesos aleatorios.")
+        print(f"[warning] Failed to load pretrained weights ({exc}). Continuing with random weights.")
         base_model = tf.keras.applications.EfficientNetV2B0(
             include_top=False,
             weights=None,
@@ -339,7 +339,7 @@ def build_model(config: PipelineConfig, num_classes: int) -> tf.keras.Model:
             weight_decay=config.weight_decay,
         )
     else:
-        raise ValueError(f"Otimizador nao suportado: {config.optimizer_name}")
+        raise ValueError(f"Unsupported optimizer: {config.optimizer_name}")
 
     model.compile(
         optimizer=optimizer,
@@ -448,7 +448,7 @@ class GracefulInterruptHandler:
 
     def _handle_signal(self, signum, frame) -> None:
         self.interrupted = True
-        print("\n[aviso] Interrupcao recebida. O treino sera pausado com seguranca ao final do batch/epoca atual.")
+        print("\n[warning] Interrupt received. Training will pause safely at the end of the current batch/epoch.")
 
 
 class StopOnInterruptCallback(tf.keras.callbacks.Callback):
@@ -496,8 +496,8 @@ class StopOnMinLRStagnation(tf.keras.callbacks.Callback):
 
         if self.stagnant_epochs >= self.patience:
             print(
-                f"\n[early-stop] {self.monitor} estagnado por {self.stagnant_epochs} epocas "
-                f"com learning rate minimo {learning_rate:.1e}."
+                f"\n[early-stop] {self.monitor} stagnant for {self.stagnant_epochs} epochs "
+                f"with minimum learning rate {learning_rate:.1e}."
             )
             self.model.stop_training = True
 
@@ -526,10 +526,10 @@ def plot_training_curves(histories: list[dict[str, list[float]]], output_path: P
 
     for fold_index, history in enumerate(histories, start=1):
         epochs = range(1, len(history["accuracy"]) + 1)
-        axes[0].plot(epochs, history["accuracy"], marker="o", label=f"Fold {fold_index} treino")
-        axes[0].plot(epochs, history["val_accuracy"], marker="x", linestyle="--", label=f"Fold {fold_index} validacao")
-        axes[1].plot(epochs, history["loss"], marker="o", label=f"Fold {fold_index} treino")
-        axes[1].plot(epochs, history["val_loss"], marker="x", linestyle="--", label=f"Fold {fold_index} validacao")
+        axes[0].plot(epochs, history["accuracy"], marker="o", label=f"Fold {fold_index} train")
+        axes[0].plot(epochs, history["val_accuracy"], marker="x", linestyle="--", label=f"Fold {fold_index} validation")
+        axes[1].plot(epochs, history["loss"], marker="o", label=f"Fold {fold_index} train")
+        axes[1].plot(epochs, history["val_loss"], marker="x", linestyle="--", label=f"Fold {fold_index} validation")
 
     axes[0].set_title("Curvas de acuracia")
     axes[0].set_xlabel("Epoca")
@@ -561,7 +561,7 @@ def plot_confusion(y_true: np.ndarray, y_pred: np.ndarray, class_names: list[str
         yticklabels=class_names,
         ax=axis,
     )
-    axis.set_title("Matriz de confusao - conjunto de teste")
+    axis.set_title("Confusion matrix - test set")
     axis.set_xlabel("Predito")
     axis.set_ylabel("Real")
     fig.tight_layout()
@@ -656,7 +656,7 @@ def plot_explainability_cases(
 ) -> None:
     selected = choose_interesting_cases(records, probabilities, predicted_labels, config.explainability_examples)
     if selected.empty:
-        print("[aviso] Nenhum caso disponivel para explicabilidade.")
+        print("[warning] No cases available for explainability.")
         return
 
     # Explainability is tiny compared to training; keep it on CPU to avoid
@@ -709,7 +709,7 @@ def evaluate_ensemble(
         return {"split": split_name, "available": False}
 
     print(
-        f"[posprocess] Iniciando avaliacao ensemble do split '{split_name}' com "
+        f"[postprocess] Starting ensemble evaluation of split '{split_name}' with "
         f"{len(model_paths)} folds e {len(records)} amostras.",
         flush=True,
     )
@@ -732,7 +732,7 @@ def evaluate_ensemble(
 
     for model_index, model_path in enumerate(model_paths, start=1):
         print(
-            f"[posprocess] Split '{split_name}': inferencia do fold {model_index}/{len(model_paths)} "
+            f"[postprocess] Split '{split_name}': inference of fold {model_index}/{len(model_paths)} "
             f"usando {Path(model_path).name}.",
             flush=True,
         )
@@ -776,7 +776,7 @@ def evaluate_ensemble(
             class_names=class_names,
             output_path=output_dir / "matriz_confusao_teste.png",
         )
-        print("[posprocess] Matriz de confusao do teste gerada.", flush=True)
+        print("[postprocess] Test confusion matrix generated.", flush=True)
 
     result = {
         "metrics": metrics,
@@ -785,7 +785,7 @@ def evaluate_ensemble(
         "probabilities": mean_probabilities,
     }
     print(
-        f"[posprocess] Avaliacao ensemble do split '{split_name}' concluida. "
+        f"[postprocess] Ensemble evaluation of split '{split_name}' completed. "
         f"accuracy={metrics['accuracy']:.4f}",
         flush=True,
     )
@@ -794,29 +794,29 @@ def evaluate_ensemble(
 
 
 def print_dataset_summary(train_records: pd.DataFrame, validation_records: pd.DataFrame, test_records: pd.DataFrame) -> None:
-    print("Resumo do dataset:")
-    print(f"- treino total: {len(train_records)}")
-    print(f"- validacao externa total: {len(validation_records)}")
-    print(f"- teste total: {len(test_records)}")
-    print("- imagens por classe no treino:")
+    print("Dataset summary:")
+    print(f"- total train: {len(train_records)}")
+    print(f"- total external validation: {len(validation_records)}")
+    print(f"- total test: {len(test_records)}")
+    print("- images per class in training:")
     print(train_records["display_name"].value_counts().sort_index().to_string())
 
 
 def summarize_variant(config: PipelineConfig) -> None:
-    aliases = ", ".join(config.variant_aliases) if config.variant_aliases else "sem aliases"
+    aliases = ", ".join(config.variant_aliases) if config.variant_aliases else "no aliases"
     dense_text = " -> ".join(str(unit) for unit in config.dense_units)
-    print("\nConfiguracao do experimento:")
-    print(f"- variante: {config.variant_name}")
+    print("\nExperiment configuration:")
+    print(f"- variant: {config.variant_name}")
     print(f"- aliases: {aliases}")
-    print(f"- camadas densas: {dense_text}")
+    print(f"- dense layers: {dense_text}")
     print(f"- dropout: {config.dropout_rate}")
-    print(f"- aumento de dados: {config.augmentation_mode}")
+    print(f"- data augmentation: {config.augmentation_mode}")
     print(f"- batch size: {config.batch_size}")
     print(f"- max epochs: {config.epochs}")
     print(f"- learning rate: {config.learning_rate}")
     print(f"- momentum: {config.momentum}")
     print(f"- weight decay: {config.weight_decay}")
-    print(f"- resume automatico: {config.resume_training}")
+    print(f"- automatic resume: {config.resume_training}")
 
 
 def build_fold_summary(history_dict: dict[str, list[float]], fold_index: int, fold_train: pd.DataFrame, fold_val: pd.DataFrame, checkpoint_path: Path) -> dict[str, Any]:
@@ -863,7 +863,7 @@ def build_interrupted_artifacts(
         },
         "interrupted": True,
         "interrupted_fold": interrupted_fold,
-        "resume_hint": "Execute novamente com o mesmo output_dir para continuar do ultimo checkpoint salvo.",
+        "resume_hint": "Run again with the same output_dir to continue from the last saved checkpoint.",
     }
     save_json(output_dir / "fold_results.json", fold_summaries)
     save_json(output_dir / "artifacts_summary.json", artifacts)
@@ -914,7 +914,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
     test_labels_all = None
 
     if config.load_images_into_memory:
-        print("[io] Precarregando dataset em memoria para evitar releitura de disco entre folds.")
+        print("[io] Preloading dataset into memory to avoid re-reading from disk between folds.")
         train_images_all, train_labels_all = load_images_to_numpy(train_records, config.image_size)
         validation_images_all, validation_labels_all = load_images_to_numpy(validation_records, config.image_size)
         test_images_all, test_labels_all = load_images_to_numpy(test_records, config.image_size)
@@ -1011,7 +1011,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
 
         if config.resume_training and state.get("status") in {"running", "interrupted"} and latest_checkpoint_path.exists():
             initial_epoch = int(state.get("completed_epochs", 0))
-            print(f"[resume] Retomando fold {fold_index} a partir da epoca {initial_epoch + 1}.")
+            print(f"[resume] Resuming fold {fold_index} from epoch {initial_epoch + 1}.")
             model = tf.keras.models.load_model(latest_checkpoint_path)
         else:
             model = build_model(config=config, num_classes=len(class_names))
@@ -1079,7 +1079,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
         except KeyboardInterrupt:
             if state_callback is not None:
                 state_callback.mark_interrupted()
-            print(f"\n[interrompido] Treinamento pausado no fold {fold_index}.")
+            print(f"\n[interrupted] Training paused at fold {fold_index}.")
             release_memory(
                 model,
                 train_dataset,
@@ -1108,7 +1108,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
                     key: [float(value) for value in values]
                     for key, values in (fit_history.history if fit_history is not None else {}).items()
                 }
-            print(f"\n[interrompido] Treinamento pausado no fold {fold_index}.")
+            print(f"\n[interrupted] Training paused at fold {fold_index}.")
             release_memory(
                 model,
                 train_dataset,
@@ -1162,16 +1162,16 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
             val_labels,
         )
 
-    print("[posprocess] Salvando resumo dos folds.", flush=True)
+    print("[postprocess] Saving fold summary.", flush=True)
     save_json(output_dir / "fold_results.json", fold_summaries)
-    print("[posprocess] Gerando curvas de treinamento.", flush=True)
+    print("[postprocess] Generating training curves.", flush=True)
     plot_training_curves(histories, output_dir / "curvas_treinamento.png")
 
     # Disable XLA/tf.function tracing for ensemble inference to avoid multi-hour
     # CPU JIT compilations that block post-processing silently.
     tf.config.run_functions_eagerly(True)
 
-    print("[posprocess] Avaliando ensemble na validacao externa.", flush=True)
+    print("[postprocess] Evaluating ensemble on external validation.", flush=True)
     validation_eval = evaluate_ensemble(
         model_paths=model_paths,
         records=validation_records,
@@ -1182,7 +1182,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
         preloaded_images=validation_images_all,
         preloaded_labels=validation_labels_all,
     )
-    print("[posprocess] Avaliando ensemble no teste.", flush=True)
+    print("[postprocess] Evaluating ensemble on the test set.", flush=True)
     test_eval = evaluate_ensemble(
         model_paths=model_paths,
         records=test_records,
@@ -1198,7 +1198,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
     best_model_path = Path(best_fold["model_path"])
 
     if test_eval.get("metrics", {}).get("available", True):
-        print("[posprocess] Gerando casos de explicabilidade Grad-CAM.", flush=True)
+        print("[postprocess] Generating Grad-CAM explainability cases.", flush=True)
         plot_explainability_cases(
             records=test_records,
             predicted_labels=test_eval["y_pred"],
@@ -1208,7 +1208,7 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
             config=config,
             output_path=output_dir / "casos_explicabilidade_gradcam.png",
         )
-        print("[posprocess] Grad-CAM concluido.", flush=True)
+        print("[postprocess] Grad-CAM completed.", flush=True)
 
     artifacts = {
         "dataset_root": str(dataset_root),
@@ -1229,10 +1229,10 @@ def run_pipeline(config: PipelineConfig) -> dict[str, Any]:
         },
         "interrupted": False,
     }
-    print("[posprocess] Salvando artifacts_summary.json.", flush=True)
+    print("[postprocess] Saving artifacts_summary.json.", flush=True)
     save_json(output_dir / "artifacts_summary.json", artifacts)
 
-    print("\nResumo final:")
+    print("\nFinal summary:")
     print(json.dumps(artifacts["validation_metrics"], indent=2, ensure_ascii=True))
     print(json.dumps(artifacts["test_metrics"], indent=2, ensure_ascii=True))
 
@@ -1299,9 +1299,9 @@ def apply_smoke_test_defaults(config: PipelineConfig) -> PipelineConfig:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Treina EfficientNetV2B0 com KFold=5 em datasets por pastas.")
-    parser.add_argument("--dataset-root", required=True, help="Pasta base do dataset contendo treinamento, validacao e teste.")
-    parser.add_argument("--output-dir", default=None, help="Pasta de saida para modelos e figuras.")
+    parser = argparse.ArgumentParser(description="Train EfficientNetV2B0 with 5-fold cross-validation on folder-structured datasets.")
+    parser.add_argument("--dataset-root", required=True, help="Dataset base folder containing the training, validation and test splits.")
+    parser.add_argument("--output-dir", default=None, help="Output folder for models and figures.")
     parser.add_argument("--image-size", type=int, default=224)
     parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--epochs", type=int, default=300)
@@ -1315,7 +1315,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-eval-samples-per-class", type=int, default=None)
     parser.add_argument("--explainability-examples", type=int, default=4)
     parser.add_argument("--verbose", type=int, default=1)
-    parser.add_argument("--dense-units", nargs="+", type=int, default=[128], help="Lista de neuronios nas camadas densas.")
+    parser.add_argument("--dense-units", nargs="+", type=int, default=[128], help="List of neurons in the dense layers.")
     parser.add_argument("--optimizer-name", default="sgd")
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--weight-decay", type=float, default=5e-4)

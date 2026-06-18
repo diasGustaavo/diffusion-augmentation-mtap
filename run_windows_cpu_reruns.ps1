@@ -34,6 +34,6 @@ Start-Process `
     -WorkingDirectory $workspace `
     -WindowStyle Normal
 
-Write-Host "Fila de reruns iniciada em CPU."
+Write-Host "Rerun queue started on CPU."
 Write-Host "Workspace: $workspace"
 Write-Host "Logs: $(Join-Path $workspace 'rerun_logs')"

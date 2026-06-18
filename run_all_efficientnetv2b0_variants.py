@@ -23,7 +23,7 @@ VARIANT_SPECS_BY_NAME = {spec["variant_name"]: spec for spec in VARIANT_SPECS}
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Executa variantes EfficientNetV2B0 sem depender de notebook.")
+    parser = argparse.ArgumentParser(description="Run EfficientNetV2B0 variants without relying on a notebook.")
     parser.add_argument("--dataset-root", required=True)
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--augmentation-mode", choices=["none", "traditional"], default="none")
@@ -40,9 +40,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--weight-decay", type=float, default=5e-4)
     parser.add_argument("--reduce-lr-patience", type=int, default=10)
     parser.add_argument("--reduce-lr-min-lr", type=float, default=1e-7)
-    parser.add_argument("--variant-name", action="append", default=[], help="Executa apenas as variantes informadas.")
-    parser.add_argument("--isolate-variants", action="store_true", help="Executa cada variante em um subprocesso isolado.")
-    parser.add_argument("--python-bin", default="", help="Python usado para subprocessos isolados.")
+    parser.add_argument("--variant-name", action="append", default=[], help="Run only the given variants.")
+    parser.add_argument("--isolate-variants", action="store_true", help="Run each variant in an isolated subprocess.")
+    parser.add_argument("--python-bin", default="", help="Python used for isolated subprocesses.")
     return parser.parse_args()
 
 
@@ -201,7 +201,7 @@ def run_variants_inprocess(
                 break
             continue
         config = build_variant_config(variant, output_dir, common_config, smoke_test=smoke_test)
-        print(f"\n===== Executando {variant_name} =====")
+        print(f"\n===== Running {variant_name} =====")
         artifacts = run_pipeline(config)
         all_artifacts.append(summarize_artifacts(variant, output_dir, artifacts))
         if artifacts.get("interrupted"):
@@ -273,7 +273,7 @@ def build_variant_subprocess_command(
 def load_variant_artifacts(output_dir: Path, variant_name: str) -> dict[str, object]:
     artifacts_path = output_dir / variant_name.lower() / "artifacts_summary.json"
     if not artifacts_path.exists():
-        raise FileNotFoundError(f"Resumo da variante nao encontrado: {artifacts_path}")
+        raise FileNotFoundError(f"Variant summary not found: {artifacts_path}")
     return json.loads(artifacts_path.read_text(encoding="utf-8"))
 
 
@@ -317,7 +317,7 @@ def run_variants_isolated(
             if artifacts.get("interrupted"):
                 break
             continue
-        print(f"\n===== Executando {variant_name} em processo isolado =====")
+        print(f"\n===== Running {variant_name} in an isolated process =====")
         command = build_variant_subprocess_command(
             python_bin=python_bin,
             dataset_root=dataset_root,
@@ -342,7 +342,7 @@ def run_variants_isolated(
         env.setdefault("PYTHONUNBUFFERED", "1")
         return_code = subprocess.run(command, cwd=str(Path(__file__).resolve().parent), env=env, check=False).returncode
         if return_code != 0:
-            raise RuntimeError(f"Falha ao executar {variant_name} em subprocesso isolado. return_code={return_code}")
+            raise RuntimeError(f"Failed to run {variant_name} in isolated subprocess. return_code={return_code}")
         artifacts = load_variant_artifacts(output_dir, variant_name)
         all_artifacts.append(summarize_artifacts(variant, output_dir, artifacts))
         if artifacts.get("interrupted"):
@@ -442,7 +442,7 @@ def main() -> None:
         reduce_lr_patience=args.reduce_lr_patience,
         reduce_lr_min_lr=args.reduce_lr_min_lr,
     )
-    print("\nResumo das variantes:")
+    print("\nVariant summary:")
     print(json.dumps(all_artifacts, indent=2, ensure_ascii=True))
 
 

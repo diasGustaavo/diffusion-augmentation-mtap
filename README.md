@@ -25,7 +25,6 @@ traditional augmentation act on different levels of the data distribution and ar
 - `experiment_suites/` — experiment configurations.
 - `requirements_tf.txt`, `requirements_tf_wsl_gpu.txt` — Python dependencies
   (TensorFlow; the WSL/GPU variant for CUDA).
-- `GUIA_EXECUCAO_WSL_GPU.md`, `README_WINDOWS_TREINAMENTO.md` — execution guides.
 
 ## Reproducing
 1. Install dependencies: `pip install -r requirements_tf.txt` (or
@@ -39,8 +38,7 @@ traditional augmentation act on different levels of the data distribution and ar
 - **Synthetic images and derived artifacts** (accuracy tables, FID/IS, reports):
   archived on Zenodo — DOI: *to be added*.
 - **Real architectural images**: sourced from third-party websites and therefore
-  **not redistributed here**; the source URLs are provided in the Zenodo record so
-  the originals can be retrieved from their sources.
+  **not redistributed here**; their sources are described in the Zenodo record.
 - **Generalist (ImageNet) subset**: the ten ImageNet validation classes used are
   listed in the paper; images are governed by the ImageNet terms of use and are not
   redistributed.

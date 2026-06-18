@@ -176,7 +176,7 @@ def now_iso() -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Executa uma fila de reruns supervisionados e isolados.")
+    parser = argparse.ArgumentParser(description="Run a queue of supervised, isolated reruns.")
     parser.add_argument("--workspace-root", default=".")
     parser.add_argument("--python-bin", default="")
     parser.add_argument("--cpu-only", action="store_true")

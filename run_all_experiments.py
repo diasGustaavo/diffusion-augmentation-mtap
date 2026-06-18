@@ -37,7 +37,7 @@ DEFAULT_EXPERIMENT_SPECS = [
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Executa os 4 experimentos EfficientNetV2B0 em sequencia, com retomada automatica.")
+    parser = argparse.ArgumentParser(description="Run the 4 EfficientNetV2B0 experiments in sequence, with automatic resume.")
     parser.add_argument("--workspace-root", default="/home/guga/masters")
     parser.add_argument("--experiment-specs-path", default="")
     parser.add_argument("--output-suffix", default="")
@@ -72,12 +72,12 @@ def load_experiment_specs(workspace_root: Path, experiment_specs_path: str) -> l
     specs_path = resolve_workspace_path(workspace_root, experiment_specs_path)
     payload = json.loads(specs_path.read_text(encoding="utf-8"))
     if not isinstance(payload, list):
-        raise ValueError("O arquivo de experimento precisa conter uma lista de especificacoes.")
+        raise ValueError("The experiment file must contain a list of specifications.")
 
     specs: list[dict[str, object]] = []
     for index, item in enumerate(payload, start=1):
         if not isinstance(item, dict):
-            raise ValueError(f"Especificacao invalida na posicao {index}: esperado objeto JSON.")
+            raise ValueError(f"Invalid specification at position {index}: expected JSON object.")
         specs.append(dict(item))
     return specs
 
@@ -95,14 +95,14 @@ def build_experiment_specs(
     resolved_specs: list[dict[str, object]] = []
     for spec in raw_specs:
         if "name" not in spec or "dataset_root" not in spec or "augmentation_mode" not in spec:
-            raise ValueError(f"Especificacao incompleta: {spec}")
+            raise ValueError(f"Incomplete specification: {spec}")
 
         output_dir_name = spec.get("output_dir_name")
         output_dir = spec.get("output_dir")
         if output_dir_name is None and output_dir is None:
-            raise ValueError(f"Especificacao precisa informar output_dir_name ou output_dir: {spec}")
+            raise ValueError(f"Specification must provide output_dir_name or output_dir: {spec}")
         if output_dir_name is not None and output_dir is not None:
-            raise ValueError(f"Especificacao deve informar apenas um entre output_dir_name e output_dir: {spec}")
+            raise ValueError(f"Specification must provide exactly one of output_dir_name and output_dir: {spec}")
 
         if output_dir_name is not None:
             output_dir_name = str(output_dir_name)
@@ -136,7 +136,7 @@ def main() -> None:
     all_experiments: list[dict[str, object]] = []
     for spec in experiment_specs:
         print(f"\n==============================")
-        print(f"Executando experimento: {spec['name']}")
+        print(f"Running experiment: {spec['name']}")
         print(f"Dataset: {spec['dataset_root']}")
         print(f"Saida: {spec['output_dir']}")
         print(f"Aumento: {spec['augmentation_mode']}")
@@ -184,9 +184,9 @@ def main() -> None:
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(all_experiments, indent=2, ensure_ascii=True), encoding="utf-8")
 
-    print("\nResumo geral:")
+    print("\nOverall summary:")
     print(json.dumps(all_experiments, indent=2, ensure_ascii=True))
-    print(f"\nResumo salvo em: {summary_path}")
+    print(f"\nSummary saved to: {summary_path}")
 
 
 if __name__ == "__main__":

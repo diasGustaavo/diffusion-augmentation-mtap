@@ -193,7 +193,7 @@ def main() -> None:
             axes[row, col].axis("off")
 
     fig.suptitle(
-        f"Grad-CAM por experimento — rerun={args.rerun}, variante={args.variant}, fold={args.fold}",
+        f"Grad-CAM per experiment — rerun={args.rerun}, variant={args.variant}, fold={args.fold}",
         fontsize=12,
     )
     fig.tight_layout(rect=(0, 0, 1, 0.97))

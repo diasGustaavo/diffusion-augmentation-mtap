@@ -10,7 +10,7 @@ from pathlib import Path
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Cria um dataset augmented com mistura controlada entre imagens originais e sinteticas."
+        description="Create an augmented dataset with a controlled mix of original and synthetic images."
     )
     parser.add_argument("--workspace-root", default=".")
     parser.add_argument("--original-root", default="datasets/original")
@@ -80,7 +80,7 @@ def build_controlled_mix_dataset(args: argparse.Namespace) -> dict[str, object]:
         synthetic_candidates = [path for path in augmented_files if file_md5(path) not in original_hashes]
         if len(synthetic_candidates) < args.synthetic_per_class:
             raise ValueError(
-                f"Classe {class_dir.name} tem apenas {len(synthetic_candidates)} sinteticas disponiveis, "
+                f"Class {class_dir.name} has only {len(synthetic_candidates)} synthetic images available, "
                 f"mas foram solicitadas {args.synthetic_per_class}."
             )
 

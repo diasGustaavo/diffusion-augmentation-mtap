@@ -17,7 +17,7 @@ def now_iso() -> str:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Supervisiona o run_all_experiments.py e relanca automaticamente se o processo cair."
+        description="Supervise run_all_experiments.py and relaunch automatically if the process dies."
     )
     parser.add_argument("--workspace-root", default="/home/guga/masters")
     parser.add_argument("--python-bin", default="")
@@ -47,18 +47,18 @@ def parse_args() -> argparse.Namespace:
         "--stall-timeout-seconds",
         type=int,
         default=900,
-        help="Reinicia o filho se o log ficar sem atualizacao por este periodo. 0 desabilita.",
+        help="Restart the child if the log has no updates for this period. 0 disables.",
     )
     parser.add_argument(
         "--poll-interval-seconds",
         type=int,
         default=10,
-        help="Intervalo entre checagens de progresso do processo filho.",
+        help="Interval between progress checks of the child process.",
     )
     parser.add_argument(
         "--use-ionice",
         action="store_true",
-        help="Executa o filho com ionice -c3. Desabilitado por padrao para evitar starvation de I/O no WSL.",
+        help="Run the child with ionice -c3. Disabled by default to avoid I/O starvation on WSL.",
     )
     return parser.parse_args()
 
@@ -142,7 +142,7 @@ def main() -> None:
 
     append_log(
         supervisor_log_path,
-        f"Supervisor iniciado. python_bin={python_bin} workspace_root={workspace_root} "
+        f"Supervisor started. python_bin={python_bin} workspace_root={workspace_root} "
         f"resume={not args.no_resume_training} cpu_only={args.cpu_only} "
         f"stall_timeout={args.stall_timeout_seconds}s use_ionice={args.use_ionice}",
     )
@@ -165,7 +165,7 @@ def main() -> None:
         command = build_child_command(args, workspace_root, python_bin)
         if args.use_ionice:
             command = ["/usr/bin/ionice", "-c3", *command]
-        append_log(supervisor_log_path, f"Iniciando processo filho: {' '.join(command)}")
+        append_log(supervisor_log_path, f"Starting child process: {' '.join(command)}")
         child_log_path.parent.mkdir(parents=True, exist_ok=True)
 
         with child_log_path.open("a", encoding="utf-8") as child_log:
@@ -237,13 +237,13 @@ def main() -> None:
                     stalled = True
                     append_log(
                         supervisor_log_path,
-                        f"Estagnacao detectada: sem novas linhas no log por >= {args.stall_timeout_seconds}s. Reiniciando filho.",
+                        f"Stall detected: no new log lines for >= {args.stall_timeout_seconds}s. Restarting child.",
                     )
                     child_process.terminate()
                     try:
                         return_code = child_process.wait(timeout=30)
                     except subprocess.TimeoutExpired:
-                        append_log(supervisor_log_path, "Filho nao encerrou apos SIGTERM. Enviando SIGKILL.")
+                        append_log(supervisor_log_path, "Child did not exit after SIGTERM. Sending SIGKILL.")
                         child_process.kill()
                         return_code = child_process.wait(timeout=30)
                     break
@@ -263,7 +263,7 @@ def main() -> None:
             break
 
         if return_code == 0:
-            append_log(supervisor_log_path, "Processo filho finalizou com sucesso.")
+            append_log(supervisor_log_path, "Child process finished successfully.")
             write_status(
                 status_path,
                 {
@@ -278,10 +278,10 @@ def main() -> None:
             break
 
         restart_count += 1
-        restart_reason = "estagnou" if stalled else "caiu"
+        restart_reason = "stalled" if stalled else "crashed"
         append_log(
             supervisor_log_path,
-            f"Processo filho {restart_reason} com return_code={return_code}. Reinicio {restart_count} em {args.restart_delay_seconds}s.",
+            f"Child process {restart_reason} with return_code={return_code}. Restart {restart_count} in {args.restart_delay_seconds}s.",
         )
         write_status(
             status_path,
