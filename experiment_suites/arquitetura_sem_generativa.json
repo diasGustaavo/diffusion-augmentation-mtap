@@ -1,0 +1,14 @@
+[
+  {
+    "name": "arquitetura_sem_generativa",
+    "dataset_root": "datasets/arquitetura_sem_generativa",
+    "output_dir_name": "arquitetura_sem_generativa_efficientnetv2b0",
+    "augmentation_mode": "none"
+  },
+  {
+    "name": "arquitetura_sem_generativa_traditional",
+    "dataset_root": "datasets/arquitetura_sem_generativa",
+    "output_dir_name": "arquitetura_sem_generativa_efficientnetv2b0_traditional",
+    "augmentation_mode": "traditional"
+  }
+]

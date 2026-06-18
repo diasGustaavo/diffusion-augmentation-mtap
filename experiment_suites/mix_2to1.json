@@ -1,0 +1,14 @@
+[
+  {
+    "name": "augmented",
+    "dataset_root": "datasets/augmented_mix_2to1",
+    "output_dir_name": "augmented_efficientnetv2b0_mix_2to1",
+    "augmentation_mode": "none"
+  },
+  {
+    "name": "generative_plus_traditional",
+    "dataset_root": "datasets/augmented_mix_2to1",
+    "output_dir_name": "augmented_efficientnetv2b0_generative_plus_traditional_mix_2to1",
+    "augmentation_mode": "traditional"
+  }
+]

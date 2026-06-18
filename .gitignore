@@ -1,0 +1,13 @@
+# Large / non-code artifacts (kept out of the code repo)
+outputs/
+datasets/
+reports/
+rerun_logs/
+__pycache__/
+*.pyc
+*.exe
+*.log
+*.executed.ipynb
+.ipynb_checkpoints/
+*.keras
+*.h5

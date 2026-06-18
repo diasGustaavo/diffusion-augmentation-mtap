@@ -1,0 +1,14 @@
+[
+  {
+    "name": "arquitetura_com_generativa_mix_2to1",
+    "dataset_root": "/mnt/a/datasets/arquitetura_com_generativa_mix_2to1",
+    "output_dir_name": "arquitetura_com_generativa_mix_2to1_efficientnetv2b0",
+    "augmentation_mode": "none"
+  },
+  {
+    "name": "arquitetura_com_generativa_mix_2to1_traditional",
+    "dataset_root": "/mnt/a/datasets/arquitetura_com_generativa_mix_2to1",
+    "output_dir_name": "arquitetura_com_generativa_mix_2to1_efficientnetv2b0_traditional",
+    "augmentation_mode": "traditional"
+  }
+]
